@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmp_wizard,l10n.es.pmp.wizard,model_l10n_es_pmp_wizard,account.group_account_user,1,1,1,1
+access_pmp_line,l10n.es.pmp.line,model_l10n_es_pmp_line,account.group_account_user,1,1,1,1
