@@ -41,12 +41,9 @@ class L10nEsPmpWizard(models.TransientModel):
                 am.name                                          AS invoice_name,
                 rp.name                                          AS partner_name,
                 am.invoice_date,
-                COALESCE(absl.date, aml_pay.date)               AS payment_date,
+                aml_pay.date                                     AS payment_date,
                 apr.amount                                       AS amount,
-                GREATEST(
-                    COALESCE(absl.date, aml_pay.date) - am.invoice_date,
-                    0
-                )                                               AS days,
+                GREATEST(aml_pay.date - am.invoice_date, 0)     AS days,
                 'paid'                                          AS line_type
             FROM account_move am
             JOIN res_partner rp           ON rp.id = am.partner_id
@@ -55,7 +52,6 @@ class L10nEsPmpWizard(models.TransientModel):
                                         AND aa.account_type = 'liability_payable'
             JOIN account_partial_reconcile apr ON apr.credit_move_id = aml.id
             JOIN account_move_line aml_pay     ON aml_pay.id = apr.debit_move_id
-            LEFT JOIN account_bank_statement_line absl ON absl.move_id = aml_pay.move_id
             WHERE am.move_type    = 'in_invoice'
               AND am.state        = 'posted'
               AND am.company_id   = %(company_id)s
