@@ -25,7 +25,7 @@
                     <button string="Cerrar" class="btn-secondary" special="cancel"/>
                 </footer>
                 <notebook>
-                    <page string="Detalle" attrs="{'invisible': [('line_ids', '=', [])]}">
+                    <page string="Detalle" invisible="not line_ids">
                         <field name="line_ids" nolabel="1">
                             <list decoration-success="line_type == 'paid'"
                                   decoration-warning="line_type == 'pending'">
