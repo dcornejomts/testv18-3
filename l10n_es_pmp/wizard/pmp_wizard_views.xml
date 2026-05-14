@@ -36,6 +36,7 @@
                                 <field name="invoice_name"/>
                                 <field name="partner_name"/>
                                 <field name="invoice_date"/>
+                                <field name="invoice_due_date"/>
                                 <field name="payment_date_manual"/>
                                 <field name="payment_date"/>
                                 <field name="amount" sum="Total"/>
