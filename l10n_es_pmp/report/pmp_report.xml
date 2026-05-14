@@ -37,6 +37,7 @@
                                     <th>Factura</th>
                                     <th>Proveedor</th>
                                     <th>Fecha Factura</th>
+                                    <th>Fecha Vencimiento</th>
                                     <th>Fecha Pago Manual</th>
                                     <th>Fecha Pago Banco</th>
                                     <th class="text-end">Importe (€)</th>
@@ -53,6 +54,7 @@
                                         <td><t t-out="line.invoice_name"/></td>
                                         <td><t t-out="line.partner_name"/></td>
                                         <td><t t-out="line.invoice_date"/></td>
+                                        <td><t t-out="line.invoice_due_date or '—'"/></td>
                                         <td><t t-out="line.payment_date_manual or '—'"/></td>
                                         <td><t t-out="line.payment_date or '—'"/></td>
                                         <td class="text-end">
@@ -64,7 +66,7 @@
                             </tbody>
                             <tfoot>
                                 <tr class="fw-bold">
-                                    <td colspan="5">Total</td>
+                                    <td colspan="6">Total</td>
                                     <td class="text-end">
                                         <t t-out="'%.2f' % sum(o.line_ids.mapped('amount'))"/>
                                     </td>
