@@ -61,30 +61,6 @@ class L10nEsPmpWizard(models.TransientModel):
               AND am.state        = 'posted'
               AND am.company_id   = %(company_id)s
               AND am.invoice_date BETWEEN %(date_from)s AND %(date_to)s
-
-            UNION ALL
-
-            SELECT
-                am.name                                          AS invoice_name,
-                rp.name                                          AS partner_name,
-                am.invoice_date,
-                am.invoice_date_due                              AS invoice_due_date,
-                NULL::date                                       AS payment_date,
-                ap.date                                          AS payment_date_manual,
-                ap.amount                                        AS amount,
-                GREATEST(ap.date - am.invoice_date, 0)           AS days,
-                'paid'                                          AS line_type
-            FROM account_move am
-            JOIN res_partner rp                         ON rp.id = am.partner_id
-            JOIN account_move__account_payment rel      ON rel.invoice_id = am.id
-            JOIN account_payment ap                     ON ap.id = rel.payment_id
-            WHERE am.move_type    = 'in_invoice'
-              AND am.state        = 'posted'
-              AND am.company_id   = %(company_id)s
-              AND am.invoice_date BETWEEN %(date_from)s AND %(date_to)s
-              AND ap.move_id      IS NULL
-              AND ap.state        IN ('paid', 'in_process')
-              AND ap.payment_type = 'outbound'
         """, {
             'company_id': self.company_id.id,
             'date_from': self.date_from,
@@ -114,14 +90,6 @@ class L10nEsPmpWizard(models.TransientModel):
               AND am.invoice_date      BETWEEN %(date_from)s AND %(date_to)s
               AND am.payment_state     IN ('not_paid', 'partial', 'in_payment')
               AND ABS(aml.amount_residual) > 0
-              AND NOT EXISTS (
-                  SELECT 1 FROM account_move__account_payment rel
-                  JOIN account_payment ap2 ON ap2.id = rel.payment_id
-                  WHERE rel.invoice_id     = am.id
-                    AND ap2.move_id        IS NULL
-                    AND ap2.state          IN ('paid', 'in_process')
-                    AND ap2.payment_type   = 'outbound'
-              )
         """, {
             'company_id': self.company_id.id,
             'date_from': self.date_from,
