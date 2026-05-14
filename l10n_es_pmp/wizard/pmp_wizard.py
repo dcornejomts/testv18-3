@@ -75,7 +75,7 @@ class L10nEsPmpWizard(models.TransientModel):
                 am.invoice_date,
                 aml.date_maturity                                AS invoice_due_date,
                 NULL::date                                       AS payment_date,
-                NULL::date                                       AS payment_date_manual,
+                ap.date                                          AS payment_date_manual,
                 ABS(aml.amount_residual)                         AS amount,
                 GREATEST(%(date_to)s - am.invoice_date, 0)      AS days,
                 'pending'                                        AS line_type
@@ -84,6 +84,8 @@ class L10nEsPmpWizard(models.TransientModel):
             JOIN account_move_line aml ON aml.move_id = am.id
             JOIN account_account aa    ON aa.id = aml.account_id
                                      AND aa.account_type = 'liability_payable'
+            LEFT JOIN account_move__account_payment amp ON amp.invoice_id = am.id
+            LEFT JOIN account_payment ap                ON ap.id = amp.payment_id
             WHERE am.move_type         = 'in_invoice'
               AND am.state             = 'posted'
               AND am.company_id        = %(company_id)s
