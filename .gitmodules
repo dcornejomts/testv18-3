@@ -22,3 +22,8 @@
 	path = OCA/server-ux
 	url = git@github.com:OCA/server-ux.git
 	branch = 18.0
+
+[submodule "OCA/account-fiscal-rule"]
+	path = OCA/account-fiscal-rule
+	url = git@github.com:OCA/account-fiscal-rule.git
+	branch = 18.0
