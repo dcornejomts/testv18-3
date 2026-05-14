@@ -1,6 +1,9 @@
+import base64
+import io
+import datetime
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
-import datetime
 
 
 class L10nEsPmpWizard(models.TransientModel):
@@ -23,8 +26,8 @@ class L10nEsPmpWizard(models.TransientModel):
         required=True,
         default=lambda self: self.env.company,
     )
-    pmp_paid = fields.Float(string='PMP Pagadas (días)', digits=(10, 2), readonly=True)
-    pmp_pending = fields.Float(string='PMP Pendientes (días)', digits=(10, 2), readonly=True)
+    pmp_paid = fields.Float(string='Ratio pagos realizados (días)', digits=(10, 2), readonly=True)
+    pmp_pending = fields.Float(string='Ratio pagos pendientes (días)', digits=(10, 2), readonly=True)
     pmp_total = fields.Float(string='PMP Total (días)', digits=(10, 2), readonly=True)
     line_ids = fields.One2many('l10n.es.pmp.line', 'wizard_id', string='Detalle')
 
@@ -35,7 +38,6 @@ class L10nEsPmpWizard(models.TransientModel):
 
         self.line_ids.unlink()
 
-        # Facturas pagadas: usa fecha del banco si existe, sino fecha del pago
         self.env.cr.execute("""
             SELECT
                 am.name                                          AS invoice_name,
@@ -63,7 +65,6 @@ class L10nEsPmpWizard(models.TransientModel):
         })
         paid_rows = self.env.cr.dictfetchall()
 
-        # Facturas pendientes o pagadas parcialmente
         self.env.cr.execute("""
             SELECT
                 am.name                                          AS invoice_name,
@@ -129,6 +130,102 @@ class L10nEsPmpWizard(models.TransientModel):
             'res_model': 'l10n.es.pmp.wizard',
             'res_id': self.id,
             'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_print_pdf(self):
+        self.ensure_one()
+        if not self.line_ids:
+            raise UserError(_('Primero calculá el PMP.'))
+        return self.env.ref('l10n_es_pmp.action_report_pmp').report_action(self)
+
+    def action_export_excel(self):
+        self.ensure_one()
+        if not self.line_ids:
+            raise UserError(_('Primero calculá el PMP.'))
+
+        try:
+            import xlsxwriter
+        except ImportError:
+            raise UserError(_('La librería xlsxwriter no está disponible.'))
+
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        sheet = workbook.add_worksheet('PMP Proveedores')
+
+        fmt_title = workbook.add_format({'bold': True, 'font_size': 14})
+        fmt_bold = workbook.add_format({'bold': True})
+        fmt_header = workbook.add_format({
+            'bold': True, 'bg_color': '#374151', 'font_color': '#FFFFFF',
+            'border': 1,
+        })
+        fmt_paid = workbook.add_format({'font_color': '#16a34a'})
+        fmt_pending = workbook.add_format({'font_color': '#d97706'})
+        fmt_date = workbook.add_format({'num_format': 'dd/mm/yyyy'})
+        fmt_money = workbook.add_format({'num_format': '#,##0.00'})
+        fmt_total = workbook.add_format({'bold': True, 'top': 1, 'num_format': '#,##0.00'})
+
+        sheet.set_column(0, 0, 12)
+        sheet.set_column(1, 1, 24)
+        sheet.set_column(2, 2, 28)
+        sheet.set_column(3, 4, 16)
+        sheet.set_column(5, 5, 15)
+        sheet.set_column(6, 6, 8)
+
+        sheet.write(0, 0, 'Período Medio de Pago a Proveedores', fmt_title)
+        sheet.write(1, 0, f'Empresa: {self.company_id.name}', fmt_bold)
+        sheet.write(2, 0, f'Período: {self.date_from} — {self.date_to}', fmt_bold)
+        sheet.write(3, 0, f'Ratio pagos realizados: {self.pmp_paid:.2f} días', fmt_bold)
+        sheet.write(4, 0, f'Ratio pagos pendientes: {self.pmp_pending:.2f} días', fmt_bold)
+        sheet.write(5, 0, f'PMP Total: {self.pmp_total:.2f} días', fmt_bold)
+
+        headers = ['Estado', 'Factura', 'Proveedor', 'Fecha Factura', 'Fecha Pago Banco', 'Importe (€)', 'Días']
+        for col, h in enumerate(headers):
+            sheet.write(7, col, h, fmt_header)
+
+        row = 8
+        for line in self.line_ids:
+            is_paid = line.line_type == 'paid'
+            fmt_state = fmt_paid if is_paid else fmt_pending
+            sheet.write(row, 0, 'Pagada' if is_paid else 'Pendiente', fmt_state)
+            sheet.write(row, 1, line.invoice_name or '')
+            sheet.write(row, 2, line.partner_name or '')
+            if line.invoice_date:
+                sheet.write_datetime(
+                    row, 3,
+                    datetime.datetime.combine(line.invoice_date, datetime.time()),
+                    fmt_date,
+                )
+            if line.payment_date:
+                sheet.write_datetime(
+                    row, 4,
+                    datetime.datetime.combine(line.payment_date, datetime.time()),
+                    fmt_date,
+                )
+            sheet.write(row, 5, line.amount, fmt_money)
+            sheet.write(row, 6, line.days)
+            row += 1
+
+        total_amount = sum(self.line_ids.mapped('amount'))
+        sheet.write(row, 4, 'TOTAL', fmt_total)
+        sheet.write(row, 5, total_amount, fmt_total)
+
+        workbook.close()
+        output.seek(0)
+
+        filename = f'PMP_Proveedores_{self.date_from}_{self.date_to}.xlsx'
+        attachment = self.env['ir.attachment'].create({
+            'name': filename,
+            'type': 'binary',
+            'datas': base64.b64encode(output.read()),
+            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'res_model': self._name,
+            'res_id': self.id,
+        })
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{attachment.id}?download=true',
             'target': 'new',
         }
 

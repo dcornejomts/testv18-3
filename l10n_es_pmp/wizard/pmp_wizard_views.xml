@@ -13,15 +13,18 @@
                         <field name="date_to"/>
                     </group>
                     <group>
-                        <field name="pmp_paid" widget="float" options="{'digits': [10, 2]}"/>
-                        <field name="pmp_pending" widget="float" options="{'digits': [10, 2]}"/>
-                        <field name="pmp_total" widget="float" options="{'digits': [10, 2]}"
-                               class="o_field_highlight"/>
+                        <field name="pmp_paid"/>
+                        <field name="pmp_pending"/>
+                        <field name="pmp_total"/>
                     </group>
                 </group>
                 <footer>
                     <button name="action_compute" string="Calcular PMP" type="object"
                             class="btn-primary"/>
+                    <button name="action_print_pdf" string="Exportar PDF" type="object"
+                            class="btn-secondary" invisible="not line_ids"/>
+                    <button name="action_export_excel" string="Exportar Excel" type="object"
+                            class="btn-secondary" invisible="not line_ids"/>
                     <button string="Cerrar" class="btn-secondary" special="cancel"/>
                 </footer>
                 <notebook>
