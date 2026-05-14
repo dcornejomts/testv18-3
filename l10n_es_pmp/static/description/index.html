@@ -1,0 +1,69 @@
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
+        <h2 class="oe_slogan">Período Medio de Pago a Proveedores (España)</h2>
+        <h3 class="oe_slogan">Cumple con la Ley 15/2010 y el Registro Mercantil</h3>
+    </div>
+</section>
+
+<section class="oe_container oe_dark">
+    <div class="oe_row oe_spaced">
+        <h3>¿Para qué sirve?</h3>
+        <p>
+            Las empresas españolas obligadas a depositar cuentas en el Registro Mercantil deben incluir
+            el <strong>Período Medio de Pago (PMP) a proveedores</strong>, según la Ley 15/2010 de medidas
+            de lucha contra la morosidad y la Resolución del ICAC.
+        </p>
+        <p>
+            Este módulo calcula automáticamente el PMP desde los datos contables de Odoo,
+            sin necesidad de exportar ni hacer cálculos manuales en Excel.
+        </p>
+    </div>
+</section>
+
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
+        <h3>Funcionalidades</h3>
+        <div class="oe_span6">
+            <ul>
+                <li>Cálculo del <strong>ratio de pagos realizados</strong> (facturas conciliadas con banco)</li>
+                <li>Cálculo del <strong>ratio de pagos pendientes</strong> (facturas sin conciliar)</li>
+                <li>Soporte para facturas con <strong>múltiples cuotas</strong> (pagos parciales)</li>
+                <li>Muestra la <strong>fecha de pago manual</strong> registrada en Odoo</li>
+            </ul>
+        </div>
+        <div class="oe_span6">
+            <ul>
+                <li>Detalle por factura con proveedor, fechas y días</li>
+                <li><strong>Exportación a PDF</strong> para adjuntar a la memoria</li>
+                <li><strong>Exportación a Excel</strong> para análisis adicional</li>
+                <li>Accesible desde <em>Contabilidad &gt; Reportes &gt; P.M.P. Proveedores</em></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="oe_container oe_dark">
+    <div class="oe_row oe_spaced">
+        <h3>Fórmula aplicada</h3>
+        <p>Según el Real Decreto 635/2014, modificado por RD 1040/2017:</p>
+        <ul>
+            <li><strong>Ratio pagados</strong> = Σ(días × importe pagado) / total pagado</li>
+            <li><strong>Ratio pendientes</strong> = Σ(días × importe pendiente) / total pendiente</li>
+            <li><strong>PMP Total</strong> = (ratio_pagados × total_pagado + ratio_pendientes × total_pendiente) / (total_pagado + total_pendiente)</li>
+        </ul>
+        <p>Los días se cuentan desde la <strong>fecha de factura</strong> hasta la fecha de pago (pagadas) o hasta el último día del período (pendientes).</p>
+    </div>
+</section>
+
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
+        <h3>Cómo usarlo</h3>
+        <ol>
+            <li>Ir a <strong>Contabilidad &gt; Reportes &gt; P.M.P. Proveedores</strong></li>
+            <li>Seleccionar la empresa y el período (normalmente el año fiscal)</li>
+            <li>Hacer click en <strong>Calcular PMP</strong></li>
+            <li>Revisar el detalle por factura en la pestaña <em>Detalle</em></li>
+            <li>Exportar a <strong>PDF</strong> o <strong>Excel</strong> según necesidad</li>
+        </ol>
+    </div>
+</section>
