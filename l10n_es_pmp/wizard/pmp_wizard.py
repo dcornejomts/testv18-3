@@ -44,6 +44,7 @@ class L10nEsPmpWizard(models.TransientModel):
                 rp.name                                          AS partner_name,
                 am.invoice_date,
                 aml_pay.date                                     AS payment_date,
+                ap.date                                          AS payment_date_manual,
                 apr.amount                                       AS amount,
                 GREATEST(aml_pay.date - am.invoice_date, 0)     AS days,
                 'paid'                                          AS line_type
@@ -54,6 +55,7 @@ class L10nEsPmpWizard(models.TransientModel):
                                         AND aa.account_type = 'liability_payable'
             JOIN account_partial_reconcile apr ON apr.credit_move_id = aml.id
             JOIN account_move_line aml_pay     ON aml_pay.id = apr.debit_move_id
+            LEFT JOIN account_payment ap        ON ap.move_id = aml_pay.move_id
             WHERE am.move_type    = 'in_invoice'
               AND am.state        = 'posted'
               AND am.company_id   = %(company_id)s
@@ -71,6 +73,7 @@ class L10nEsPmpWizard(models.TransientModel):
                 rp.name                                          AS partner_name,
                 am.invoice_date,
                 NULL::date                                       AS payment_date,
+                NULL::date                                       AS payment_date_manual,
                 ABS(aml.amount_residual)                         AS amount,
                 GREATEST(%(date_to)s - am.invoice_date, 0)      AS days,
                 'pending'                                        AS line_type
@@ -83,7 +86,7 @@ class L10nEsPmpWizard(models.TransientModel):
               AND am.state             = 'posted'
               AND am.company_id        = %(company_id)s
               AND am.invoice_date      BETWEEN %(date_from)s AND %(date_to)s
-              AND am.payment_state     IN ('not_paid', 'partial')
+              AND am.payment_state     IN ('not_paid', 'partial', 'in_payment')
               AND ABS(aml.amount_residual) > 0
         """, {
             'company_id': self.company_id.id,
@@ -100,6 +103,7 @@ class L10nEsPmpWizard(models.TransientModel):
                 'partner_name': row['partner_name'],
                 'invoice_date': row['invoice_date'],
                 'payment_date': row['payment_date'],
+                'payment_date_manual': row['payment_date_manual'],
                 'amount': float(row['amount']),
                 'days': int(row['days']),
                 'line_type': row['line_type'],
@@ -168,9 +172,9 @@ class L10nEsPmpWizard(models.TransientModel):
         sheet.set_column(0, 0, 12)
         sheet.set_column(1, 1, 24)
         sheet.set_column(2, 2, 28)
-        sheet.set_column(3, 4, 16)
-        sheet.set_column(5, 5, 15)
-        sheet.set_column(6, 6, 8)
+        sheet.set_column(3, 5, 16)
+        sheet.set_column(6, 6, 15)
+        sheet.set_column(7, 7, 8)
 
         sheet.write(0, 0, 'Período Medio de Pago a Proveedores', fmt_title)
         sheet.write(1, 0, f'Empresa: {self.company_id.name}', fmt_bold)
@@ -179,7 +183,7 @@ class L10nEsPmpWizard(models.TransientModel):
         sheet.write(4, 0, f'Ratio pagos pendientes: {self.pmp_pending:.2f} días', fmt_bold)
         sheet.write(5, 0, f'PMP Total: {self.pmp_total:.2f} días', fmt_bold)
 
-        headers = ['Estado', 'Factura', 'Proveedor', 'Fecha Factura', 'Fecha Pago Banco', 'Importe (€)', 'Días']
+        headers = ['Estado', 'Factura', 'Proveedor', 'Fecha Factura', 'Fecha Pago Manual', 'Fecha Pago Banco', 'Importe (€)', 'Días']
         for col, h in enumerate(headers):
             sheet.write(7, col, h, fmt_header)
 
@@ -196,19 +200,25 @@ class L10nEsPmpWizard(models.TransientModel):
                     datetime.datetime.combine(line.invoice_date, datetime.time()),
                     fmt_date,
                 )
-            if line.payment_date:
+            if line.payment_date_manual:
                 sheet.write_datetime(
                     row, 4,
+                    datetime.datetime.combine(line.payment_date_manual, datetime.time()),
+                    fmt_date,
+                )
+            if line.payment_date:
+                sheet.write_datetime(
+                    row, 5,
                     datetime.datetime.combine(line.payment_date, datetime.time()),
                     fmt_date,
                 )
-            sheet.write(row, 5, line.amount, fmt_money)
-            sheet.write(row, 6, line.days)
+            sheet.write(row, 6, line.amount, fmt_money)
+            sheet.write(row, 7, line.days)
             row += 1
 
         total_amount = sum(self.line_ids.mapped('amount'))
-        sheet.write(row, 4, 'TOTAL', fmt_total)
-        sheet.write(row, 5, total_amount, fmt_total)
+        sheet.write(row, 5, 'TOTAL', fmt_total)
+        sheet.write(row, 6, total_amount, fmt_total)
 
         workbook.close()
         output.seek(0)
@@ -239,6 +249,7 @@ class L10nEsPmpLine(models.TransientModel):
     partner_name = fields.Char(string='Proveedor')
     invoice_date = fields.Date(string='Fecha Factura')
     payment_date = fields.Date(string='Fecha Pago Banco')
+    payment_date_manual = fields.Date(string='Fecha Pago Manual')
     amount = fields.Float(string='Importe', digits=(16, 2))
     days = fields.Integer(string='Días')
     line_type = fields.Selection(
