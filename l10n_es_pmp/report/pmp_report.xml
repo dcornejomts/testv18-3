@@ -56,7 +56,7 @@
                                         <td><t t-out="line.payment_date_manual or '—'"/></td>
                                         <td><t t-out="line.payment_date or '—'"/></td>
                                         <td class="text-end">
-                                            <t t-out="'%,.2f' % line.amount"/>
+                                            <t t-out="'%.2f' % line.amount"/>
                                         </td>
                                         <td class="text-end"><t t-out="line.days"/></td>
                                     </tr>
@@ -66,7 +66,7 @@
                                 <tr class="fw-bold">
                                     <td colspan="5">Total</td>
                                     <td class="text-end">
-                                        <t t-out="'%,.2f' % sum(o.line_ids.mapped('amount'))"/>
+                                        <t t-out="'%.2f' % sum(o.line_ids.mapped('amount'))"/>
                                     </td>
                                     <td></td>
                                 </tr>
